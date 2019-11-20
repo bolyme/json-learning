@@ -2,8 +2,7 @@
 #ifndef LEPTJSON_H__
 #define LEPTJSON_H__
 #include <cassert>
-#include <memory>
-#include <string>
+
 enum Lept_type { LEPT_NULL, LEPT_FALSE, LEPT_TRUE, LEPT_NUMBER, LEPT_STRING, LEPT_ARRAY, LEPT_OBJECT };
 struct Lept_context {
 	const char *json;
@@ -19,6 +18,7 @@ struct Lept_value {
 		double n;
 	} u;
 	Lept_type type;
+
 	int parse(Lept_context* c);
 	int parse(const char *json);
 	inline void init() { type = LEPT_NULL; }
@@ -40,7 +40,9 @@ struct Lept_value {
 	inline size_t get_object_key_length(size_t index) const;
 	inline Lept_value& get_object_value(size_t index);
 	inline const Lept_value& get_object_value(size_t index) const;
-
+	char* stringify(size_t* length);
+	void stringify(Lept_context* c);
+	void stringify_string(Lept_context* c, const char* str, size_t len);
 private:
 	void lept_parse_whitespace(Lept_context* c);
 	int lept_parse_number(Lept_context* c);
