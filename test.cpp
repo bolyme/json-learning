@@ -7,6 +7,7 @@
 #include "json.h"
 #include <cmath>
 #include <cstring>
+#include <crtdbg.h>
 
 static int main_ret = 0;
 static int test_count = 0;
@@ -34,26 +35,34 @@ do{\
 
 static void test_parse_null() {
 	Lept_value v;
+	v.init();
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse("null"));
 	EXPECT_EQ_INT(LEPT_NULL, v.get_type());
+	v.free();
 }
 static void test_parse_false() {
 	Lept_value v;
+	v.init();
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse("\nfalse  "));
 	EXPECT_EQ_INT(LEPT_FALSE, v.get_type());
+	v.free();
 }
 static void test_parse_true() {
 	Lept_value v;
+	v.init();
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse("  true"));
 	EXPECT_EQ_INT(LEPT_TRUE, v.get_type());
+	v.free();
 }
 
 #define TEST_NUMBER(num, json)\
 do{\
 	Lept_value v;\
+	v.init();\
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse(json));\
 	EXPECT_EQ_DOUBLE(num, v.get_number());\
 	EXPECT_EQ_INT(LEPT_NUMBER, v.get_type());\
+	v.free();\
 }while(0)
 
 
@@ -92,9 +101,11 @@ static void test_parse_number() {
 #define TEST_STRING(string, json)\
 do{\
 	Lept_value v;\
+	v.init();\
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse(json));\
 	EXPECT_EQ_STRING(string, v.get_string(), v.get_string_length());\
 	EXPECT_EQ_INT(LEPT_STRING, v.get_type());\
+	v.free();\
 }while(0)
 
 static void test_parse_string() {
@@ -111,10 +122,13 @@ static void test_parse_string() {
 
 static void test_parse_array() {
 	Lept_value v;
+	v.init();
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse("[]"));
 	EXPECT_EQ_INT(LEPT_ARRAY, v.get_type());
 	EXPECT_EQ_SIZET(0, v.get_array_size());
+	v.free();
 
+	v.init();
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse("[null , false , true, \"abc\", 1.2 ]"));
 	EXPECT_EQ_INT(LEPT_ARRAY, v.get_type());
 	EXPECT_EQ_SIZET(5, v.get_array_size());
@@ -125,7 +139,9 @@ static void test_parse_array() {
 	EXPECT_EQ_INT(LEPT_NUMBER, v.get_array_element(4).get_type());
 	EXPECT_EQ_STRING("abc", v.get_array_element(3).get_string(), v.get_array_element(3).get_string_length());
 	EXPECT_EQ_DOUBLE(1.2, v.get_array_element(4).get_number());
+	v.free();
 
+	v.init();
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse("[ [ ] , [ 0 ] , [ 0 , 1 ] , [ 0 , 1 , 2 ] ]"));
 	EXPECT_EQ_INT(LEPT_ARRAY, v.get_type());
 	EXPECT_EQ_SIZET(4, v.get_array_size());
@@ -139,16 +155,20 @@ static void test_parse_array() {
 			EXPECT_EQ_DOUBLE((double)j, e.get_number());
 		}
 	}
+	v.free();
 }
 
 static void test_parse_object() {
 	Lept_value v;
 	size_t i;
 
+	v.init();
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse(" { } "));
 	EXPECT_EQ_INT(LEPT_OBJECT, v.get_type());
 	EXPECT_EQ_SIZET(0, v.get_object_size());
+	v.free();
 
+	v.init();
 	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse(
 		" { "
 		"\"n\" : null , "
@@ -194,6 +214,7 @@ static void test_parse_object() {
 			EXPECT_EQ_DOUBLE(i + 1.0, oi.get_number());
 		}
 	}
+	v.free();
 
 }
 static void test_parse() {
@@ -206,7 +227,57 @@ static void test_parse() {
 	test_parse_object();
 }
 
+#define TEST_ROUNDTRIP(json) \
+do{\
+	Lept_value v;\
+	v.init();\
+	size_t length = 0;\
+	char* json2;\
+	EXPECT_EQ_INT(LEPT_PARSE_OK, v.parse(json)); \
+	json2 = v.stringify(&length);\
+	EXPECT_EQ_STRING(json, json2, length);\
+	v.free();\
+	free(json2);\
+}while(0)
 
+static void test_stringify() {
+	TEST_ROUNDTRIP("null");
+	TEST_ROUNDTRIP("true");
+	TEST_ROUNDTRIP("false");
+
+	TEST_ROUNDTRIP("0");
+	TEST_ROUNDTRIP("-0");
+	TEST_ROUNDTRIP("1");
+	TEST_ROUNDTRIP("-1");
+	TEST_ROUNDTRIP("1.5");
+	TEST_ROUNDTRIP("-1.5");
+	TEST_ROUNDTRIP("3.25");
+	TEST_ROUNDTRIP("1e+20");
+	TEST_ROUNDTRIP("1.234e+20");
+	TEST_ROUNDTRIP("1.234e-20");
+
+	TEST_ROUNDTRIP("1.0000000000000002"); /* the smallest number > 1 */
+	TEST_ROUNDTRIP("4.9406564584124654e-324"); /* minimum denormal */
+	TEST_ROUNDTRIP("-4.9406564584124654e-324");
+	TEST_ROUNDTRIP("2.2250738585072009e-308");  /* Max subnormal double */
+	TEST_ROUNDTRIP("-2.2250738585072009e-308");
+	TEST_ROUNDTRIP("2.2250738585072014e-308");  /* Min normal positive double */
+	TEST_ROUNDTRIP("-2.2250738585072014e-308");
+	TEST_ROUNDTRIP("1.7976931348623157e+308");  /* Max double */
+	TEST_ROUNDTRIP("-1.7976931348623157e+308");
+
+	TEST_ROUNDTRIP("\"\"");
+	TEST_ROUNDTRIP("\"Hello\"");
+	TEST_ROUNDTRIP("\"Hello\\nWorld\"");
+	TEST_ROUNDTRIP("\"\\\" \\\\ / \\b \\f \\n \\r \\t\"");
+	TEST_ROUNDTRIP("\"Hello\\u0001World\"");
+
+	TEST_ROUNDTRIP("[]");
+	TEST_ROUNDTRIP("[null,false,true,123,\"abc\",[1,2,3]]");
+
+	TEST_ROUNDTRIP("{}");
+	TEST_ROUNDTRIP("{\"n\":null,\"f\":false,\"t\":true,\"i\":123,\"s\":\"abc\",\"a\":[1,2,3],\"o\":{\"1\":1,\"2\":2,\"3\":3}}");
+}
 #define TEST_ERROR(error, json)\
 do{\
 	Lept_value v;\
@@ -341,11 +412,14 @@ static void test_parse_error() {
 	test_miss_colon();
 	test_miss_comma_or_curly_bracket();
 }
+
 int main()
 {
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	test_parse();
 	test_parse_error();
+	test_stringify();
 	printf("%d/%d, %3.2f%% passes", test_pass, test_count, static_cast<double>(test_pass) / static_cast<double>(test_count) * 100);
-    return main_ret;
+	return main_ret;
 }
 
