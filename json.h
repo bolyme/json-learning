@@ -40,9 +40,9 @@ struct Lept_value {
 	inline size_t get_object_key_length(size_t index) const;
 	inline Lept_value& get_object_value(size_t index);
 	inline const Lept_value& get_object_value(size_t index) const;
-	char* stringify(size_t* length);
-	void stringify(Lept_context* c);
-	void stringify_string(Lept_context* c, const char* str, size_t len);
+	//char* stringify(size_t* length);
+	//void stringify(Lept_context* c);
+	//void stringify_string(Lept_context* c, const char* str, size_t len);
 private:
 	void lept_parse_whitespace(Lept_context* c);
 	int lept_parse_number(Lept_context* c);
