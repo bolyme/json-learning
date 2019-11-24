@@ -377,73 +377,74 @@ int Lept_value::parse(const char *json) {
 	return ret;
 }
 
-void Lept_value::stringify_string(Lept_context* c, const char* str, size_t len)
-{
-	const char* p = str;
-	PUT_CHAR(c, '\"');
-	for (;*p != '\0';) {
-		unsigned char ch = (unsigned char)*p++;
-		switch (ch) {
-		case '\b': PUT_CHAR(c, '\\'); PUT_CHAR(c, 'b'); break;
-		case '\f': PUT_CHAR(c, '\\'); PUT_CHAR(c, 'f'); break;
-		case '\n': PUT_CHAR(c, '\\'); PUT_CHAR(c, 'n'); break;
-		case '\t': PUT_CHAR(c, '\\'); PUT_CHAR(c, 't'); break;
-		case '\r': PUT_CHAR(c, '\\'); PUT_CHAR(c, 'r'); break;
-		case '\"': PUT_CHAR(c, '\\'); PUT_CHAR(c, '\"'); break;
-		case '\\': PUT_CHAR(c, '\\'); PUT_CHAR(c, '\\'); break;
-		default:
-			if (ch < 0x20) {
-				char buffer[7];
-				sprintf(buffer, "\\u%04X", ch);
-				PUTS(c, buffer, 6);
-			}else
-				PUT_CHAR(c, ch);
-			break;
-		}
-	}
-	PUT_CHAR(c, '\"');
-}
-void Lept_value::stringify(Lept_context* c) {
-	switch (type) {
-	case LEPT_NULL: PUTS(c, "null", 4); break;
-	case LEPT_TRUE: PUTS(c, "true", 4); break;
-	case LEPT_FALSE: PUTS(c, "false", 5); break;
-	case LEPT_NUMBER: c->top -= 32 - sprintf((char*)lept_push(c, 32), "%.17g", u.n); break;
-	case LEPT_STRING:
-		stringify_string(c, u.s.s, u.s.len); break;
-	case LEPT_ARRAY:
-		PUT_CHAR(c, '[');
-		for (size_t i = 0; i < u.a.size; ++i) {
-			u.a.e[i].stringify(c);
-			if (i != u.a.size - 1)
-				PUT_CHAR(c, ',');
-		}
-		PUT_CHAR(c, ']');
-		break;
-	case LEPT_OBJECT:
-		PUT_CHAR(c, '{');
-		for (size_t i = 0; i < u.o.size; ++i) {
-			stringify_string(c, u.o.m[i].k, u.o.m[i].klen);
-			PUT_CHAR(c, ':');
-			u.o.m[i].v.stringify(c);
-			if (i != u.o.size - 1)
-				PUT_CHAR(c, ',');
-		}
-		PUT_CHAR(c, '}');
-		break;
-	}
-}
-
-char * Lept_value::stringify(size_t *length) {
-	Lept_context c;
-
-	c.stack = (char*)malloc(INITIAL_SIZE);
-	c.top = 0;
-	c.capacity = INITIAL_SIZE;
-	stringify(&c);
-	if(length)
-		*length = c.top;
-	PUT_CHAR(&c, '\0');
-
-	return c.stack;
-}
+//
+//void Lept_value::stringify_string(Lept_context* c, const char* str, size_t len)
+//{
+//	const char* p = str;
+//	PUT_CHAR(c, '\"');
+//	for (;*p != '\0';) {
+//		unsigned char ch = (unsigned char)*p++;
+//		switch (ch) {
+//		case '\b': PUT_CHAR(c, '\\'); PUT_CHAR(c, 'b'); break;
+//		case '\f': PUT_CHAR(c, '\\'); PUT_CHAR(c, 'f'); break;
+//		case '\n': PUT_CHAR(c, '\\'); PUT_CHAR(c, 'n'); break;
+//		case '\t': PUT_CHAR(c, '\\'); PUT_CHAR(c, 't'); break;
+//		case '\r': PUT_CHAR(c, '\\'); PUT_CHAR(c, 'r'); break;
+//		case '\"': PUT_CHAR(c, '\\'); PUT_CHAR(c, '\"'); break;
+//		case '\\': PUT_CHAR(c, '\\'); PUT_CHAR(c, '\\'); break;
+//		default:
+//			if (ch < 0x20) {
+//				char buffer[7];
+//				sprintf(buffer, "\\u%04X", ch);
+//				PUTS(c, buffer, 6);
+//			}else
+//				PUT_CHAR(c, ch);
+//			break;
+//		}
+//	}
+//	PUT_CHAR(c, '\"');
+//}
+//void Lept_value::stringify(Lept_context* c) {
+//	switch (type) {
+//	case LEPT_NULL: PUTS(c, "null", 4); break;
+//	case LEPT_TRUE: PUTS(c, "true", 4); break;
+//	case LEPT_FALSE: PUTS(c, "false", 5); break;
+//	case LEPT_NUMBER: c->top -= 32 - sprintf((char*)lept_push(c, 32), "%.17g", u.n); break;
+//	case LEPT_STRING:
+//		stringify_string(c, u.s.s, u.s.len); break;
+//	case LEPT_ARRAY:
+//		PUT_CHAR(c, '[');
+//		for (size_t i = 0; i < u.a.size; ++i) {
+//			u.a.e[i].stringify(c);
+//			if (i != u.a.size - 1)
+//				PUT_CHAR(c, ',');
+//		}
+//		PUT_CHAR(c, ']');
+//		break;
+//	case LEPT_OBJECT:
+//		PUT_CHAR(c, '{');
+//		for (size_t i = 0; i < u.o.size; ++i) {
+//			stringify_string(c, u.o.m[i].k, u.o.m[i].klen);
+//			PUT_CHAR(c, ':');
+//			u.o.m[i].v.stringify(c);
+//			if (i != u.o.size - 1)
+//				PUT_CHAR(c, ',');
+//		}
+//		PUT_CHAR(c, '}');
+//		break;
+//	}
+//}
+//
+//char * Lept_value::stringify(size_t *length) {
+//	Lept_context c;
+//
+//	c.stack = (char*)malloc(INITIAL_SIZE);
+//	c.top = 0;
+//	c.capacity = INITIAL_SIZE;
+//	stringify(&c);
+//	if(length)
+//		*length = c.top;
+//	PUT_CHAR(&c, '\0');
+//
+//	return c.stack;
+//}
